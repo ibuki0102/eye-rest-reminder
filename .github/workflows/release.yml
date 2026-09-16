@@ -56,4 +56,5 @@ jobs:
           generateReleaseNotes: true
           releaseDraft: false
           prerelease: false
+          releaseAssetNamePattern: eye-rest-reminder-windows-x64-setup[ext]
           args: --bundles nsis
