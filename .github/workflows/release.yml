@@ -1,0 +1,59 @@
+name: Release Windows App
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build and publish Windows installer
+    runs-on: windows-latest
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Check tag matches app version
+        shell: pwsh
+        run: |
+          $appVersion = (Get-Content src-tauri/tauri.conf.json -Raw | ConvertFrom-Json).version
+          $expectedTag = "v$appVersion"
+
+          if ($env:GITHUB_REF_NAME -ne $expectedTag) {
+            throw "Release tag '$env:GITHUB_REF_NAME' must match Tauri version '$expectedTag'."
+          }
+
+      - name: Check formatting
+        run: npm run format:check
+
+      - name: Build and publish release
+        uses: tauri-apps/tauri-action@v0.6.2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: 用眼休息提醒 ${{ github.ref_name }}
+          releaseBody: |
+            ## 用眼休息提醒
+
+            請從下方 Assets 下載並執行 Windows 安裝檔。
+          generateReleaseNotes: true
+          releaseDraft: false
+          prerelease: false
+          args: --bundles nsis
